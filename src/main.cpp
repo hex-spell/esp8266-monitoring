@@ -1,10 +1,3 @@
-//
-// A simple server implementation showing how to:
-//  * serve static messages
-//  * read GET and POST parameters
-//  * handle missing pages / 404s
-//
-
 #include <Arduino.h>
 #ifdef ESP32
 #include <WiFi.h>
