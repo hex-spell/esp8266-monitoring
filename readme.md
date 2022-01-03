@@ -2,8 +2,8 @@
 Async websockets client that sends sensor data to vps
 
 # Current sensors
- - Flame (HW-491 / KY-026)
- - Temperature (HW-506 / Ds18b20 / KY-001)
+ - Pin `D5`: Flame (`HW-491` / `KY-026`)
+ - Pin `D6`: Temperature (`HW-506` / `Ds18b20` / `KY-001`)
 
 # TODO
 - Add humidity, light, tds, water temperature, ph and movement sensors
