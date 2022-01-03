@@ -1,36 +1,19 @@
 #include <Arduino.h>
-#ifdef ESP32
-#include <WiFi.h>
-#include <AsyncTCP.h>
-#elif defined(ESP8266)
 #include <ESP8266WiFi.h>
-#include <ESPAsyncTCP.h>
-#endif
-#include <ESPAsyncWebServer.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
+#include "WebSocketClient.h"
 
 OneWire oneWire(14);
 DallasTemperature sensors(&oneWire);
-AsyncWebServer server(80);
-AsyncWebSocket ws("/ws");
-AsyncWebSocketClient *wsClient;
 char message[160] = "";
 
-const char* SSID = "wifi_name";
-const char* PASS = "wifi_pass";
+const char *SSID = "wifi_name";
+const char *PASS = "wifi_password";
+const char *WS_SERVER = "192.168.1.2"; // Change this
+const int WS_PORT = 80; // Change this
 
-void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len)
-{
-  if (type == WS_EVT_CONNECT)
-  {
-    wsClient = client;
-  }
-  else if (type == WS_EVT_DISCONNECT)
-  {
-    wsClient = nullptr;
-  }
-}
+WebSocketClient ws(false);
 
 void setup()
 {
@@ -46,26 +29,29 @@ void setup()
 
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
-  // Start webserver
-  ws.onEvent(onWsEvent);
-  server.addHandler(&ws);
-  server.begin();
-
-  // Pins
   pinMode(D6, INPUT);
 }
 
 void loop()
 {
-  // If client is connected ...
-  if (wsClient != nullptr && wsClient->canSend())
+  sensors.requestTemperatures();
+  float temperatureC = sensors.getTempCByIndex(0);
+  sprintf(message, "{\"temp\": \"%f\", \"fire\": %s}", temperatureC, digitalRead(D6) ? "true" : "false");
+  Serial.println(message);
+
+  if (!ws.isConnected())
   {
-    sensors.requestTemperatures(); 
-    float temperatureC = sensors.getTempCByIndex(0);
-    sprintf(message, "Temperature: %f ºC Fire: %s", temperatureC, digitalRead(D6) ? "alarm" : "none");
-    wsClient->text(message);
-    delay(5000);
+    ws.connect(WS_SERVER, "/ws?a=123&t=listener", WS_PORT);
   }
-  // Wait 10 ms
-  delay(10);
+  else
+  {
+    ws.send(message);
+    String msg;
+    if (ws.getMessage(msg))
+    {
+      Serial.println(msg);
+    }
+  }
+  
+  delay(2000);
 }
